@@ -5,5 +5,5 @@ module.exports = app => {
   const { main } = controller;
 
   router.post('/login', main.login);
-  router.get('/info', main.studentInfo);
+  router.post('/info', main.studentInfo);
 };

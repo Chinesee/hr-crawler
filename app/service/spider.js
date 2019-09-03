@@ -5,10 +5,11 @@ const Service = require('egg').Service;
 const cheerio = require('cheerio');
 const getUserAgent = require('../util/user-agent');
 
-const BaseUrl = 'http://class.sise.com.cn:7001/sise';
-const loginUrl = `${BaseUrl}/login.jsp`;
-const loginCheckUrl = `${BaseUrl}/login_check_login.jsp`;
-const indexUrl = `${BaseUrl}/module/student_states/student_select_class/main.jsp`;
+const BaseUrl = 'http://class.sise.com.cn:7001';
+const loginUrl = `${BaseUrl}/sise/login.jsp`;
+const loginCheckUrl = `${BaseUrl}/sise/login_check_login.jsp`;
+const indexUrl = `${BaseUrl}/sise/module/student_states/student_select_class/main.jsp`;
+const scheduleUrl = 'http://class.sise.com.cn:7001/sise/module/student_schedular/student_schedular.jsp';
 
 class SpiderService extends Service {
   async login(data) {
@@ -60,7 +61,7 @@ class SpiderService extends Service {
           headers: { cookie },
         });
         if (res.status === 200) {
-          return { data: { cookie, page: res.data }, code: 1000 };
+          return { cookie, data: res.data, code: 1000 };
         }
         return { msg: '请求首页失败', code: 5000 };
       }
@@ -69,15 +70,33 @@ class SpiderService extends Service {
     return { msg: '请求登录页面失败', code: 5000 };
   }
 
-  async getStudentInfo() {
+  async getStudentInfo(data) {
     const { ctx } = this;
-    const res = await ctx.curl(loginUrl, {
-      dataType: 'text',
-      headers: {
-        'user-agent': getUserAgent(),
-        host: 'class.sise.com.cn:7001',
-      },
-    });
+    let res = await this.login(data);
+    if (res.code === 1000) {
+      const $ = cheerio.load(res.data);
+      const re = /\/SISEWeb.*(?=')/i;
+      const infoUrl = BaseUrl + $('.table1 table:nth-child(1) td').attr('onclick').match(re)[0];
+      console.log(infoUrl);
+      res = await ctx.curl(infoUrl, {
+        dataType: 'text',
+        headers: { cookie: res.cookie },
+      });
+      return res;
+    }
+    return res;
+  }
+
+  async getSchedule(data) {
+    const { ctx } = this;
+    let res = await this.login(data);
+    if (res.code === 1000) {
+      res = await ctx.curl(scheduleUrl, {
+        dataType: 'text',
+        headers: { cookie: res.cookie },
+      });
+      return res;
+    }
     return res;
   }
 }
