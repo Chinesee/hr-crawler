@@ -22,6 +22,16 @@ class MainController extends Controller {
     ctx.status = 200;
     ctx.body = res;
   }
+
+  async schedule() {
+    const { ctx, service } = this;
+
+    const data = ctx.request.body;
+    const res = await service.spider.getSchedule(data);
+
+    ctx.status = 200;
+    ctx.body = res;
+  }
 }
 
 module.exports = MainController;
