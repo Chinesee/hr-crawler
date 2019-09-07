@@ -9,7 +9,7 @@ const BaseUrl = 'http://class.sise.com.cn:7001';
 const loginUrl = `${BaseUrl}/sise/login.jsp`;
 const loginCheckUrl = `${BaseUrl}/sise/login_check_login.jsp`;
 const indexUrl = `${BaseUrl}/sise/module/student_states/student_select_class/main.jsp`;
-const scheduleUrl = `${BaseUrl}/sise/module/student_schedular/student_schedular.jsp`;
+const scheduleUrl = `${BaseUrl}/sise/module/student_schedular/student_schedular.jsp?schoolyear=2018&semester=1`;
 
 class SpiderService extends Service {
   async login(data) {
@@ -30,13 +30,13 @@ class SpiderService extends Service {
 
       const hiddenName = $('form > input').attr('name');
       const hiddenValue = $('form > input').attr('value');
-      const randomValue = $('#random').attr('value');
-      const tokenValue = $('#token').attr('value');
+      const random = $('#random').attr('value');
+      const token = $('#token').attr('value');
 
       const loginData = {
         [`${hiddenName}`]: hiddenValue,
-        random: randomValue,
-        token: tokenValue,
+        random,
+        token,
         username,
         password,
       };
@@ -73,6 +73,7 @@ class SpiderService extends Service {
   async getStudentInfo(data) {
     const { ctx } = this;
     let res = await this.login(data);
+
     if (res.code === 1000) {
       let $ = cheerio.load(res.data);
       const re = /\/SISEWeb.*(?=')/i;
@@ -127,15 +128,150 @@ class SpiderService extends Service {
         return { msg: '查询“课程表”页面出错', code: 3002 };
       }
 
+      // 预编译正则表达式
+      const regName = /.*(?=\()/; // 课程名称
+      const regCode = /(?<=\().*?(?=\s)/; // 课程代码
+      const regAddr = /(?<=\[).*?(?=\])/; // 课程地点
+      const regWeek = /(?<=\().*(?=\))/; // 课程周数
+
+      const courses = [];
+
       const $ = cheerio.load(res.data);
       $('form table:nth-child(5) tr:nth-child(1)')
         .nextAll()
-        .each(function() {
-          const text = $(this).text();
-          console.log(text);
+        .each(function(i, el) {
+          const _ = cheerio.load(el);
+
+          const courseList = [];
+          for (let i = 2; i <= 6; i += 1) {
+            const v = _(`td:nth-child(${i})`).text().trim();
+            if (v.length > 0) {
+              const courseArray = v.split(', ');
+              if (courseArray.length === 1) {
+                const classOne = courseArray[0];
+                const courseName = classOne.match(regName)[0];
+                const courseCode = classOne.match(regCode)[0];
+                const courseAddr = classOne.match(regAddr)[0];
+                const weekArray = classOne.match(regWeek)[0].split(' ');
+                const courseTeacher = weekArray[1];
+                let weeks = weekArray.slice(2, -1);
+                weeks.push(weeks.pop().replace('周', ''));
+                weeks = weeks.map(Number);
+
+                courseList.push({
+                  course: [{
+                    name: courseName,
+                    code: courseCode,
+                    addr: courseAddr,
+                    teacher: courseTeacher,
+                    weeks,
+                  }],
+                });
+              } else if (courseArray.length === 2) {
+                const courseOne = courseArray[0];
+                const courseTwo = courseArray[1];
+
+                const courseName = courseOne.match(regName)[0];
+                const courseCode = courseOne.match(regCode)[0];
+                const courseAddr = courseOne.match(regAddr)[0];
+                const weekArray = courseOne.match(regWeek)[0].split(' ');
+                const courseTeacher = weekArray[1];
+                let weeks = weekArray.slice(2, -1);
+                weeks.push(weeks.pop().replace('周', ''));
+                weeks = weeks.map(Number);
+
+                const courseName2 = courseTwo.match(regName)[0];
+                const courseCode2 = courseTwo.match(regCode)[0];
+                const courseAddr2 = courseTwo.match(regAddr)[0];
+                const weekArray2 = courseTwo.match(regWeek)[0].split(' ');
+                const courseTeacher2 = weekArray[1];
+                let weeks2 = weekArray2.slice(2, -1);
+                weeks2.push(weeks2.pop().replace('周', ''));
+                weeks2 = weeks2.map(Number);
+
+                courseList.push({
+                  course: [{
+                    name: courseName,
+                    code: courseCode,
+                    addr: courseAddr,
+                    teacher: courseTeacher,
+                    weeks,
+                  }, {
+                    name: courseName2,
+                    code: courseCode2,
+                    addr: courseAddr2,
+                    teacher: courseTeacher2,
+                    weeks: weeks2,
+                  }],
+                });
+              }
+            } else {
+              courseList.push({ course: [] });
+            }
+          }
+          courses.push(courseList);
+        });
+      return { data: { courses }, code: 1000 };
+    }
+    return res;
+  }
+
+  async getAllGrades(data) {
+    const { ctx } = this;
+    let res = await this.login(data);
+
+    if (res.code === 1000) {
+      let $ = cheerio.load(res.data);
+      const re = /\/SISEWeb.*(?=')/i;
+      const infoUrl = BaseUrl + $('.table1 table:nth-child(1) td').attr('onclick').match(re)[0];
+
+      res = await ctx.curl(infoUrl, {
+        dataType: 'text',
+        headers: { cookie: res.cookie },
+      });
+
+      if (res.status >= 400) {
+        return { msg: '查询“个人信息”页面出错', code: 3002 };
+      }
+
+      const semester = [];
+      const courses = [];
+
+      $ = cheerio.load(res.data);
+      $('#form1 > .table:nth-child(6) > tbody tr')
+        .each(function(i, el) {
+          const _ = cheerio.load(el);
+          const code = _('td:nth-child(2)').text();
+          const name = _('td:nth-child(3)').text();
+          const credit = _('td:nth-child(4)').text();
+          const term = _('td:nth-child(8)').text();
+          const score = _('td:nth-child(9)').text();
+
+          semester.push(_('td:nth-child(1)').text().trim());
+          courses.push({
+            code,
+            name,
+            credit,
+            term,
+            score,
+          });
         });
 
-      return res;
+      const num = []; // 每个学期的课程数
+      let count = 1;
+      for (let i = 0; i < semester.length; i += 1) {
+        if (semester[i].length === 0) {
+          count += 1;
+          continue;
+        }
+        num.push(count);
+        count = 1;
+      }
+      num.push(count);
+      num.shift();
+      console.log(num);
+
+      return { data: courses, code: 1000 };
     }
     return res;
   }

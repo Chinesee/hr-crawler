@@ -32,6 +32,16 @@ class MainController extends Controller {
     ctx.status = 200;
     ctx.body = res;
   }
+
+  async allGrades() {
+    const { ctx, service } = this;
+
+    const data = ctx.request.body;
+    const res = await service.spider.getAllGrades(data);
+
+    ctx.status = 200;
+    ctx.body = res;
+  }
 }
 
 module.exports = MainController;
