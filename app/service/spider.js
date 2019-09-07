@@ -236,22 +236,28 @@ class SpiderService extends Service {
 
       const semester = [];
       const courses = [];
+      const course = [];
 
       $ = cheerio.load(res.data);
+
+      // 必修成绩
       $('#form1 > .table:nth-child(6) > tbody tr')
         .each(function(i, el) {
           const _ = cheerio.load(el);
           const code = _('td:nth-child(2)').text();
           const name = _('td:nth-child(3)').text();
           const credit = _('td:nth-child(4)').text();
+          const method = _('td:nth-child(5)').text();
           const term = _('td:nth-child(8)').text();
           const score = _('td:nth-child(9)').text();
 
           semester.push(_('td:nth-child(1)').text().trim());
-          courses.push({
+          course.push({
+            type: 1,
             code,
             name,
             credit,
+            method,
             term,
             score,
           });
@@ -269,9 +275,113 @@ class SpiderService extends Service {
       }
       num.push(count);
       num.shift();
-      console.log(num);
 
-      return { data: courses, code: 1000 };
+      num.reduce((acc, curr) => {
+        courses.push(course.slice(acc, acc + curr));
+        return acc + curr;
+      }, 0);
+
+      // 选修成绩
+      const electiveCourses = [];
+      $('#form1 > .table:nth-child(10) > tbody tr')
+        .each(function(i, el) {
+          const _ = cheerio.load(el);
+          const code = _('td:nth-child(1)').text();
+          const name = _('td:nth-child(2)').text();
+          const credit = _('td:nth-child(3)').text();
+          const method = _('td:nth-child(5)').text();
+          const term = _('td:nth-child(7)').text();
+          const score = _('td:nth-child(8)').text();
+
+          electiveCourses.push({
+            type: 2,
+            code,
+            name,
+            credit,
+            method,
+            term,
+            score,
+          });
+        });
+      courses.push(electiveCourses);
+
+      return { data: { courses }, code: 1000 };
+    }
+    return res;
+  }
+
+  async getCurrentGrades(data) {
+    const { ctx } = this;
+    let res = await this.login(data);
+
+    if (res.code === 1000) {
+      let $ = cheerio.load(res.data);
+      const re = /\/SISEWeb.*(?=')/i;
+      const infoUrl = BaseUrl + $('.table1 table:nth-child(1) td').attr('onclick').match(re)[0];
+
+      res = await ctx.curl(infoUrl, {
+        dataType: 'text',
+        headers: { cookie: res.cookie },
+      });
+
+      if (res.status >= 400) {
+        return { msg: '查询“个人信息”页面出错', code: 3002 };
+      }
+
+      const courses = [];
+
+      $ = cheerio.load(res.data);
+
+      // 必修成绩
+      $('#form1 > .table:nth-child(6) > tbody tr')
+        .each(function(i, el) {
+          const _ = cheerio.load(el);
+          const term = _('td:nth-child(8)').text().trim();
+
+          if (term === data.current_term) {
+            const code = _('td:nth-child(2)').text();
+            const name = _('td:nth-child(3)').text();
+            const credit = _('td:nth-child(4)').text();
+            const method = _('td:nth-child(5)').text();
+            const score = _('td:nth-child(9)').text();
+
+            courses.push({
+              type: 1,
+              code,
+              name,
+              credit,
+              method,
+              term,
+              score,
+            });
+          }
+        });
+
+      $('#form1 > .table:nth-child(10) > tbody tr')
+        .each(function(i, el) {
+          const _ = cheerio.load(el);
+          const term = _('td:nth-child(7)').text().trim();
+
+          if (term === data.current_term) {
+            const code = _('td:nth-child(1)').text();
+            const name = _('td:nth-child(2)').text();
+            const credit = _('td:nth-child(3)').text();
+            const method = _('td:nth-child(5)').text();
+            const score = _('td:nth-child(8)').text();
+
+            courses.push({
+              type: 2,
+              code,
+              name,
+              credit,
+              method,
+              term,
+              score,
+            });
+          }
+        });
+
+      return { data: { courses }, code: 1000 };
     }
     return res;
   }
