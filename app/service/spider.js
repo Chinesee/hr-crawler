@@ -134,7 +134,7 @@ class SpiderService extends Service {
       const regAddr = /(?<=\[).*?(?=\])/; // 课程地点
       const regWeek = /(?<=\().*(?=\))/; // 课程周数
 
-      const courses = [];
+      const courses = []; // 存放所有课表信息的地方
 
       const $ = cheerio.load(res.data);
       $('form table:nth-child(5) tr:nth-child(1)')
@@ -145,8 +145,8 @@ class SpiderService extends Service {
           const courseList = [];
           for (let i = 2; i <= 6; i += 1) {
             const v = _(`td:nth-child(${i})`).text().trim();
-            if (v.length > 0) {
-              const courseArray = v.split(', ');
+            if (v.length > 0) { // 如果课程不为空
+              const courseArray = v.split(', '); // 长度为1代表该格子只有1节课，2为两节课
               if (courseArray.length === 1) {
                 const classOne = courseArray[0];
                 const courseName = classOne.match(regName)[0];
@@ -155,7 +155,7 @@ class SpiderService extends Service {
                 const weekArray = classOne.match(regWeek)[0].split(' ');
                 const courseTeacher = weekArray[1];
                 let weeks = weekArray.slice(2, -1);
-                weeks.push(weeks.pop().replace('周', ''));
+                weeks.push(weeks.pop().replace('周', '')); // 将 “周” 字去除
                 weeks = weeks.map(Number);
 
                 courseList.push({
