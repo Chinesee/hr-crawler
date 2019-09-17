@@ -10,6 +10,7 @@ const loginUrl = `${BaseUrl}/sise/login.jsp`;
 const loginCheckUrl = `${BaseUrl}/sise/login_check_login.jsp`;
 const indexUrl = `${BaseUrl}/sise/module/student_states/student_select_class/main.jsp`;
 const scheduleUrl = `${BaseUrl}/sise/module/student_schedular/student_schedular.jsp?schoolyear=2018&semester=1`;
+const usualGradesUrl = `${BaseUrl}/sise/module/commonresult/index.jsp`;
 
 class SpiderService extends Service {
   async login(data) {
@@ -310,7 +311,7 @@ class SpiderService extends Service {
     return res;
   }
 
-  async getCurrentGrades(data) {
+  async getCurrentGrade(data) {
     const { ctx } = this;
     let res = await this.login(data);
 
@@ -382,6 +383,97 @@ class SpiderService extends Service {
         });
 
       return { data: { courses }, code: 1000 };
+    }
+    return res;
+  }
+
+  async getUsualGrades(data) {
+    const { ctx } = this;
+    let res = await this.login(data);
+    const cookie = res.cookie;
+
+    if (res.code === 1000) {
+      res = await ctx.curl(usualGradesUrl, {
+        dataType: 'text',
+        headers: { cookie },
+      });
+
+      if (res.status >= 400) {
+        return { msg: '查询“平时成绩”页面出错', code: 3002 };
+      }
+
+      const names = []; // 课程名称列表
+      const links = []; // 链接列表
+      const usualGrades = []; // 最终结果数据存放处
+
+      let $ = cheerio.load(res.data);
+      $('table.table1 tr:nth-child(1)')
+        .nextAll()
+        .each(function(i, el) {
+          const _ = cheerio.load(el);
+          const item = _('a');
+          names.push(item.text().trim());
+          links.push(item.attr('href'));
+        });
+
+      const base = 'http://class.sise.com.cn:7001/sise/module/commonresult/';
+      const promises = links.map(async (link, i) => {
+        const url = `${base}${link}`;
+
+        res = await ctx.curl(url, {
+          dataType: 'text',
+          headers: { cookie },
+        });
+
+        const rows = [];
+        $ = cheerio.load(res.data);
+        $('table:nth-child(2) table tr:nth-child(1)')
+          .nextAll()
+          .each(function(i, el) {
+            const keys = [ 'label', 'percentage', 'most', 'score' ];
+            const row = {};
+            const _ = cheerio.load(el);
+            const spans = _('td').find('span');
+            if (spans.length > 0) {
+              spans.each(function(i) {
+                row[keys[i]] = _(this).text().trim();
+              });
+              rows.push(row);
+            }
+          });
+        if (rows.length > 0) {
+          usualGrades.push({
+            name: names[i],
+            items: rows,
+          });
+        }
+      });
+      await Promise.all(promises);
+      return { data: { usual_grades: usualGrades }, code: 1000 };
+    }
+    return res;
+  }
+
+  async getAttendance(data) {
+    const { ctx } = this;
+    let res = await this.login(data);
+
+    if (res.code === 1000) {
+      let $ = cheerio.load(res.data);
+      const re = /\/SISEWeb.*(?=')/i;
+      const attendanceUrl = BaseUrl + $('table.table1 tr:nth-child(1) > td:nth-child(4) td').attr('onclick').match(re)[0];
+      console.log(attendanceUrl);
+
+      res = await ctx.curl(attendanceUrl, {
+        dataType: 'text',
+        headers: { cookie: res.cookie },
+      });
+
+      if (res.status >= 400) {
+        return { msg: '查询“考勤信息”页面出错', code: 3002 };
+      }
+
+      $ = cheerio.load(res.data);
     }
     return res;
   }
