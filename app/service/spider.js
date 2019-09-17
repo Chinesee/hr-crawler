@@ -390,11 +390,12 @@ class SpiderService extends Service {
   async getUsualGrades(data) {
     const { ctx } = this;
     let res = await this.login(data);
+    const cookie = res.cookie;
 
     if (res.code === 1000) {
       res = await ctx.curl(usualGradesUrl, {
         dataType: 'text',
-        headers: { cookie: res.cookie },
+        headers: { cookie },
       });
 
       if (res.status >= 400) {
@@ -403,23 +404,51 @@ class SpiderService extends Service {
 
       const names = []; // 课程名称列表
       const links = []; // 链接列表
+      const result = []; // 最终结果数据存放处
 
-      const $ = cheerio.load(res.data);
-      $('table.table1 tr:gt(0) > td > span > strong > a')
-        .each(function() {
-          const item = $(this);
+      let $ = cheerio.load(res.data);
+      $('table.table1 tr:nth-child(1)')
+        .nextAll()
+        .each(function(i, el) {
+          const _ = cheerio.load(el);
+          const item = _('a');
           names.push(item.text().trim());
           links.push(item.attr('href'));
         });
 
       const base = 'http://class.sise.com.cn:7001/sise/module/commonresult/';
-      links.forEach(async link => {
+      await links.forEach(async (link, i) => {
         const url = `${base}${link}`;
+
         res = await ctx.curl(url, {
           dataType: 'text',
-          headers: { cookie: res.cookie },
+          headers: { cookie },
         });
+
+        const rows = [];
+        $ = cheerio.load(res.data);
+        $('table:nth-child(2) table tr:nth-child(1)')
+          .nextAll()
+          .each(function(i, el) {
+            const keys = [ 'label', 'percentage', 'most', 'score' ];
+            const row = {};
+            const _ = cheerio.load(el);
+            const spans = _('td').find('span');
+            if (spans.length > 0) {
+              spans.each(function(i) {
+                row[keys[i]] = _(this).text().trim();
+              });
+              rows.push(row);
+            }
+          });
+        result.push({
+          name: names[i],
+          items: rows,
+        });
+        // console.log(result);
       });
+      console.log('==', result);
+      return result;
     }
     return res;
   }
