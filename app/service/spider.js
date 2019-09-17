@@ -404,7 +404,7 @@ class SpiderService extends Service {
 
       const names = []; // 课程名称列表
       const links = []; // 链接列表
-      const result = []; // 最终结果数据存放处
+      const usualGrades = []; // 最终结果数据存放处
 
       let $ = cheerio.load(res.data);
       $('table.table1 tr:nth-child(1)')
@@ -417,7 +417,7 @@ class SpiderService extends Service {
         });
 
       const base = 'http://class.sise.com.cn:7001/sise/module/commonresult/';
-      await links.forEach(async (link, i) => {
+      const promises = links.map(async (link, i) => {
         const url = `${base}${link}`;
 
         res = await ctx.curl(url, {
@@ -441,14 +441,13 @@ class SpiderService extends Service {
               rows.push(row);
             }
           });
-        result.push({
+        usualGrades.push({
           name: names[i],
           items: rows,
         });
-        // console.log(result);
       });
-      console.log('==', result);
-      return result;
+      await Promise.all(promises);
+      return { data: { usual_grades: usualGrades }, code: 1000 };
     }
     return res;
   }
