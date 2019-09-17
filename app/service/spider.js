@@ -441,10 +441,12 @@ class SpiderService extends Service {
               rows.push(row);
             }
           });
-        usualGrades.push({
-          name: names[i],
-          items: rows,
-        });
+        if (rows.length > 0) {
+          usualGrades.push({
+            name: names[i],
+            items: rows,
+          });
+        }
       });
       await Promise.all(promises);
       return { data: { usual_grades: usualGrades }, code: 1000 };

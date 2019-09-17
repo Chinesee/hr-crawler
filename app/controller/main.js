@@ -57,10 +57,7 @@ class MainController extends Controller {
     const { ctx, service } = this;
 
     const data = ctx.request.body;
-    const res = await service.spider.getUsualGrades({
-      username: '1840129612',
-      password: '1',
-    });
+    const res = await service.spider.getUsualGrades(data);
 
     ctx.status = 200;
     ctx.body = res;
