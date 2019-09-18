@@ -417,6 +417,8 @@ class SpiderService extends Service {
         });
 
       const base = 'http://class.sise.com.cn:7001/sise/module/commonresult/';
+
+      // 并行执行异步爬虫
       const promises = links.map(async (link, i) => {
         const url = `${base}${link}`;
 
@@ -426,11 +428,12 @@ class SpiderService extends Service {
         });
 
         const rows = [];
+        let total = '';
+        const keys = [ 'label', 'percentage', 'most', 'score' ];
         $ = cheerio.load(res.data);
         $('table:nth-child(2) table tr:nth-child(1)')
           .nextAll()
           .each(function(i, el) {
-            const keys = [ 'label', 'percentage', 'most', 'score' ];
             const row = {};
             const _ = cheerio.load(el);
             const spans = _('td').find('span');
@@ -441,14 +444,32 @@ class SpiderService extends Service {
               rows.push(row);
             }
           });
+
+        // 总平时成绩
+        $('p table table tr')
+          .each(function(i, el) {
+            const row = {};
+            const _ = cheerio.load(el);
+            const spans = _('td').find('span');
+            if (spans.length > 0) {
+              spans.each(function(i) {
+                row[keys[i]] = _(this).text().trim();
+              });
+              total = row.score;
+              rows.push(row);
+            }
+            console.log(rows);
+          });
         if (rows.length > 0) {
           usualGrades.push({
             name: names[i],
             items: rows,
+            total,
           });
         }
       });
       await Promise.all(promises);
+
       return { data: { usual_grades: usualGrades }, code: 1000 };
     }
     return res;
@@ -458,11 +479,11 @@ class SpiderService extends Service {
     const { ctx } = this;
     let res = await this.login(data);
 
+    const result = [];
     if (res.code === 1000) {
       let $ = cheerio.load(res.data);
       const re = /\/SISEWeb.*(?=')/i;
       const attendanceUrl = BaseUrl + $('table.table1 tr:nth-child(1) > td:nth-child(4) td').attr('onclick').match(re)[0];
-      console.log(attendanceUrl);
 
       res = await ctx.curl(attendanceUrl, {
         dataType: 'text',
@@ -474,6 +495,12 @@ class SpiderService extends Service {
       }
 
       $ = cheerio.load(res.data);
+      $('#table1 tbody tr').each(function(i, el) {
+        const _ = cheerio.load(el);
+        const label = _('td:nth-child(2)').text();
+        const value = _('td:nth-child(3)').text().trim() || '全勤'; result.push({ label, value });
+      });
+      return result;
     }
     return res;
   }
