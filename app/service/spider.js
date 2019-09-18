@@ -387,6 +387,78 @@ class SpiderService extends Service {
     return res;
   }
 
+  async getAttendance(data) {
+    const { ctx } = this;
+    let res = await this.login(data);
+
+    const result = [];
+    if (res.code === 1000) {
+      let $ = cheerio.load(res.data);
+      const re = /\/SISEWeb.*(?=')/i;
+      const attendanceUrl = BaseUrl + $('table.table1 tr:nth-child(1) > td:nth-child(4) td').attr('onclick').match(re)[0];
+
+      res = await ctx.curl(attendanceUrl, {
+        dataType: 'text',
+        headers: { cookie: res.cookie },
+      });
+
+      if (res.status >= 400) {
+        return { msg: '查询“考勤信息”页面出错', code: 3002 };
+      }
+
+      $ = cheerio.load(res.data);
+      $('#table1 tbody tr').each(function(i, el) {
+        const _ = cheerio.load(el);
+        const label = _('td:nth-child(2)').text();
+        const value = _('td:nth-child(3)').text().trim() || '全勤'; result.push({ label, value });
+      });
+      return { data: { attendance: result }, code: 1000 };
+    }
+    return res;
+  }
+
+  async getExamTime(data) {
+    const { ctx } = this;
+    let res = await this.login(data);
+
+    if (res.code === 1000) {
+      let $ = cheerio.load(res.data);
+      const re = /\/SISEWeb.*(?=')/i;
+      const examTimeUrl = BaseUrl + $('table.table1 tr:nth-child(1) > td:nth-child(3) td').attr('onclick').match(re)[0];
+
+      res = await ctx.curl(examTimeUrl, {
+        dataType: 'text',
+        headers: { cookie: res.cookie },
+      });
+
+      if (res.status >= 400) {
+        return { msg: '查询“考试时间”页面出错', code: 3002 };
+      }
+
+      const result = [];
+      const labels = [ '课程代码', '课程名称', '考试日期', '考试时间', '考场编码', '考场名称', '考试座位', '考试状态' ];
+      let name;
+      const items = [];
+      $ = cheerio.load(res.data);
+      $('#form1 table.table tbody tr').each(function(i, el) {
+        const _ = cheerio.load(el);
+        name = _('td:nth-child(2)');
+        for (let i = 0; i < 8; i += 1) {
+          items.push({
+            label: labels[i],
+            value: _(`td:nth-child(${i})`).text().trim(),
+          });
+        }
+        result.push({
+          name,
+          items,
+        });
+      });
+      return { data: { exam_time: result }, code: 1000 };
+    }
+    return res;
+  }
+
   async getUsualGrades(data) {
     const { ctx } = this;
     let res = await this.login(data);
@@ -471,36 +543,6 @@ class SpiderService extends Service {
       await Promise.all(promises);
 
       return { data: { usual_grades: usualGrades }, code: 1000 };
-    }
-    return res;
-  }
-
-  async getAttendance(data) {
-    const { ctx } = this;
-    let res = await this.login(data);
-
-    const result = [];
-    if (res.code === 1000) {
-      let $ = cheerio.load(res.data);
-      const re = /\/SISEWeb.*(?=')/i;
-      const attendanceUrl = BaseUrl + $('table.table1 tr:nth-child(1) > td:nth-child(4) td').attr('onclick').match(re)[0];
-
-      res = await ctx.curl(attendanceUrl, {
-        dataType: 'text',
-        headers: { cookie: res.cookie },
-      });
-
-      if (res.status >= 400) {
-        return { msg: '查询“考勤信息”页面出错', code: 3002 };
-      }
-
-      $ = cheerio.load(res.data);
-      $('#table1 tbody tr').each(function(i, el) {
-        const _ = cheerio.load(el);
-        const label = _('td:nth-child(2)').text();
-        const value = _('td:nth-child(3)').text().trim() || '全勤'; result.push({ label, value });
-      });
-      return result;
     }
     return res;
   }

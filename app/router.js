@@ -9,7 +9,8 @@ module.exports = app => {
   router.post('/schedule', main.schedule);
   router.post('/all-grades', main.allGrades);
   router.post('/current-grade', main.currentGrade);
-  router.post('/usual-grades', main.usualGrades);
   router.post('/attendance', main.attendance);
-  router.get('/', main.usualGrades);
+  router.post('/exam-time', main.examTime);
+  router.post('/usual-grades', main.usualGrades);
+  router.get('/', main.examTime);
 };

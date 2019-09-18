@@ -53,21 +53,31 @@ class MainController extends Controller {
     ctx.body = res;
   }
 
-  async usualGrades() {
-    const { ctx, service } = this;
-
-    const data = ctx.request.body;
-    const res = await service.spider.getUsualGrades(data);
-
-    ctx.status = 200;
-    ctx.body = res;
-  }
-
   async attendance() {
     const { ctx, service } = this;
 
     const data = ctx.request.body;
     const res = await service.spider.getAttendance(data);
+
+    ctx.status = 200;
+    ctx.body = res;
+  }
+
+  async examTime() {
+    const { ctx, service } = this;
+
+    const data = ctx.request.body;
+    const res = await service.spider.getExamTime(data);
+
+    ctx.status = 200;
+    ctx.body = res;
+  }
+
+  async usualGrades() {
+    const { ctx, service } = this;
+
+    const data = ctx.request.body;
+    const res = await service.spider.getUsualGrades(data);
 
     ctx.status = 200;
     ctx.body = res;
