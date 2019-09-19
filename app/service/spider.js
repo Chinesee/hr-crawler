@@ -9,7 +9,8 @@ const BaseUrl = 'http://class.sise.com.cn:7001';
 const loginUrl = `${BaseUrl}/sise/login.jsp`;
 const loginCheckUrl = `${BaseUrl}/sise/login_check_login.jsp`;
 const indexUrl = `${BaseUrl}/sise/module/student_states/student_select_class/main.jsp`;
-const scheduleUrl = `${BaseUrl}/sise/module/student_schedular/student_schedular.jsp?schoolyear=2018&semester=1`;
+// const scheduleUrl = `${BaseUrl}/sise/module/student_schedular/student_schedular.jsp?schoolyear=2018&semester=1`;
+const scheduleUrl = `${BaseUrl}/sise/module/student_schedular/student_schedular.jsp`;
 const usualGradesUrl = `${BaseUrl}/sise/module/commonresult/index.jsp`;
 
 class SpiderService extends Service {
@@ -530,7 +531,6 @@ class SpiderService extends Service {
               total = row.score;
               rows.push(row);
             }
-            console.log(rows);
           });
         if (rows.length > 0) {
           usualGrades.push({

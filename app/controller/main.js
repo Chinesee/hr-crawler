@@ -3,6 +3,11 @@
 const Controller = require('egg').Controller;
 
 class MainController extends Controller {
+  welcome() {
+    const { ctx } = this;
+    ctx.body = '欢迎使用，华软爬虫';
+  }
+
   async login() {
     const { ctx, service } = this;
 
