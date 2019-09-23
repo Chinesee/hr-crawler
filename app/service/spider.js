@@ -546,6 +546,28 @@ class SpiderService extends Service {
     }
     return res;
   }
+
+  async getTeachers(teacher) {
+    const { ctx } = this;
+    const department = teacher.department;
+    const name = teacher.name;
+    const url = 'https://80482e7d-911a-4939-807f-fbbfa7d7fff4.mock.pstmn.io/teachers';
+    const res = await ctx.curl(url, {
+      dataType: 'json',
+    });
+    if (res.status === 200) {
+      const teachers = res.data.data.teachers;
+      if (
+        teachers.hasOwnProperty(department) &&
+        teachers[department].hasOwnProperty(name)
+      ) {
+        const info = teachers[department][name];
+        return { data: { teacher: { name, info } }, code: 1000 };
+      }
+      return { msg: '查询不到该教师的信息', code: 4004 };
+    }
+    return { code: 5000, msg: '访问教师接口出错' };
+  }
 }
 
 module.exports = SpiderService;

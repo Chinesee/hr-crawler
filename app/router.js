@@ -13,4 +13,5 @@ module.exports = app => {
   router.post('/attendance', main.attendance);
   router.post('/exam-time', main.examTime);
   router.post('/usual-grades', main.usualGrades);
+  router.post('/teachers', main.teachers);
 };
