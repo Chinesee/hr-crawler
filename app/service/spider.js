@@ -14,6 +14,7 @@ const scheduleUrl = `${BaseUrl}/sise/module/student_schedular/student_schedular.
 const usualGradesUrl = `${BaseUrl}/sise/module/commonresult/index.jsp`;
 
 class SpiderService extends Service {
+  // 登录
   async login(data) {
     const { ctx } = this;
 
@@ -72,6 +73,7 @@ class SpiderService extends Service {
     return { msg: '请求登录页面失败', code: 5000 };
   }
 
+  // 获取学生信息
   async getStudentInfo(data) {
     const { ctx } = this;
     let res = await this.login(data);
@@ -117,6 +119,7 @@ class SpiderService extends Service {
     return res;
   }
 
+  // 获取课表信息
   async getSchedule(data) {
     const { ctx } = this;
     let res = await this.login(data);
@@ -218,6 +221,7 @@ class SpiderService extends Service {
     return res;
   }
 
+  // 获取所有成绩
   async getAllGrades(data) {
     const { ctx } = this;
     let res = await this.login(data);
@@ -312,6 +316,7 @@ class SpiderService extends Service {
     return res;
   }
 
+  // 获取当前学期的成绩
   async getCurrentGrade(data) {
     const { ctx } = this;
     let res = await this.login(data);
@@ -388,6 +393,7 @@ class SpiderService extends Service {
     return res;
   }
 
+  // 获取考勤信息
   async getAttendance(data) {
     const { ctx } = this;
     let res = await this.login(data);
@@ -418,6 +424,7 @@ class SpiderService extends Service {
     return res;
   }
 
+  // 获取考试时间
   async getExamTime(data) {
     const { ctx } = this;
     let res = await this.login(data);
@@ -436,30 +443,24 @@ class SpiderService extends Service {
         return { msg: '查询“考试时间”页面出错', code: 3002 };
       }
 
-      const result = [];
-      const labels = [ '课程代码', '课程名称', '考试日期', '考试时间', '考场编码', '考场名称', '考试座位', '考试状态' ];
-      let name;
-      const items = [];
+      const examTime = [];
+      const labels = [ 'code', 'name', 'date', 'time', 'encode', 'addr', 'seat', 'status' ];
+
       $ = cheerio.load(res.data);
-      $('#form1 table.table tbody tr').each(function(i, el) {
+      $('#form1 table.table tbody tr').each((i, el) => {
         const _ = cheerio.load(el);
-        name = _('td:nth-child(2)');
-        for (let i = 0; i < 8; i += 1) {
-          items.push({
-            label: labels[i],
-            value: _(`td:nth-child(${i})`).text().trim(),
-          });
-        }
-        result.push({
-          name,
-          items,
+        const item = {};
+        _('td').each((i, el) => {
+          item[labels[i]] = cheerio.load(el).text();
         });
+        examTime.push(item);
       });
-      return { data: { exam_time: result }, code: 1000 };
+      return { data: { exam_time: examTime }, code: 1000 };
     }
     return res;
   }
 
+  // 获取平时成绩
   async getUsualGrades(data) {
     const { ctx } = this;
     let res = await this.login(data);
@@ -547,6 +548,7 @@ class SpiderService extends Service {
     return res;
   }
 
+  // 获取教师信息
   async getTeachers(teacher) {
     const { ctx } = this;
     const department = teacher.department;
