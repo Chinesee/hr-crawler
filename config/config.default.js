@@ -16,6 +16,12 @@ module.exports = appInfo => {
     },
   }
 
+  config.httpclient = {
+    request: {
+      timeout: 20000,
+    },
+  }
+
   // add your user config here
   const userConfig = {
     // myAppName: 'egg',

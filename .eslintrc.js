@@ -7,6 +7,12 @@ module.exports = {
     semi: [
       "error",
       "never"
-    ]
+    ],
+    'array-bracket-spacing': ['error', 'never'],
+    'space-before-function-paren': ['error', {
+      'anonymous': 'always',
+      'named': 'never',
+      'asyncArrow': 'always'
+    }]
   }
 }

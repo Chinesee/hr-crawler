@@ -92,12 +92,12 @@ class SpiderService extends Service {
         return { msg: '查询“个人信息”页面出错', code: 3002 }
       }
 
-      const label = [ '学号', '姓名', '年级', '专业', '身份证', '电子邮箱', '行政班', '班主任', '辅导员' ]
+      const label = ['学号', '姓名', '年级', '专业', '身份证', '电子邮箱', '行政班', '班主任', '辅导员']
       const value = []
       const info = []
 
       $ = cheerio.load(res.data)
-      $('table.table1 table td.td_left').each(function() {
+      $('table.table1 table td.td_left').each(function () {
         const text = $(this)
           .text()
           .trim()
@@ -144,7 +144,7 @@ class SpiderService extends Service {
       const $ = cheerio.load(res.data)
       $('form table:nth-child(5) tr:nth-child(1)')
         .nextAll()
-        .each(function(i, el) {
+        .each(function (i, el) {
           const _ = cheerio.load(el)
 
           const courseList = []
@@ -248,7 +248,7 @@ class SpiderService extends Service {
 
       // 必修成绩
       $('#form1 > .table:nth-child(6) > tbody tr')
-        .each(function(i, el) {
+        .each(function (i, el) {
           const _ = cheerio.load(el)
           const code = _('td:nth-child(2)').text()
           const name = _('td:nth-child(3)').text()
@@ -290,7 +290,7 @@ class SpiderService extends Service {
       // 选修成绩
       const electiveCourses = []
       $('#form1 > .table:nth-child(10) > tbody tr')
-        .each(function(i, el) {
+        .each(function (i, el) {
           const _ = cheerio.load(el)
           const code = _('td:nth-child(1)').text()
           const name = _('td:nth-child(2)').text()
@@ -341,7 +341,7 @@ class SpiderService extends Service {
 
       // 必修成绩
       $('#form1 > .table:nth-child(6) > tbody tr')
-        .each(function(i, el) {
+        .each(function (i, el) {
           const _ = cheerio.load(el)
           const term = _('td:nth-child(8)').text().trim()
 
@@ -365,7 +365,7 @@ class SpiderService extends Service {
         })
 
       $('#form1 > .table:nth-child(10) > tbody tr')
-        .each(function(i, el) {
+        .each(function (i, el) {
           const _ = cheerio.load(el)
           const term = _('td:nth-child(7)').text().trim()
 
@@ -414,7 +414,7 @@ class SpiderService extends Service {
       }
 
       $ = cheerio.load(res.data)
-      $('#table1 tbody tr').each(function(i, el) {
+      $('#table1 tbody tr').each(function (i, el) {
         const _ = cheerio.load(el)
         const label = _('td:nth-child(2)').text()
         const value = _('td:nth-child(3)').text().trim() || '全勤'; result.push({ label, value })
@@ -444,7 +444,7 @@ class SpiderService extends Service {
       }
 
       const examTime = []
-      const labels = [ 'code', 'name', 'date', 'time', 'encode', 'addr', 'seat', 'status' ]
+      const labels = ['code', 'name', 'date', 'time', 'encode', 'addr', 'seat', 'status']
 
       $ = cheerio.load(res.data)
       $('#form1 table.table tbody tr').each((i, el) => {
@@ -483,7 +483,7 @@ class SpiderService extends Service {
       let $ = cheerio.load(res.data)
       $('table.table1 tr:nth-child(1)')
         .nextAll()
-        .each(function(i, el) {
+        .each(function (i, el) {
           const _ = cheerio.load(el)
           const item = _('a')
           names.push(item.text().trim())
@@ -503,16 +503,16 @@ class SpiderService extends Service {
 
         const rows = []
         let total = ''
-        const keys = [ 'label', 'percentage', 'most', 'score' ]
+        const keys = ['label', 'percentage', 'most', 'score']
         $ = cheerio.load(res.data)
         $('table:nth-child(2) table tr:nth-child(1)')
           .nextAll()
-          .each(function(i, el) {
+          .each(function (i, el) {
             const row = {}
             const _ = cheerio.load(el)
             const spans = _('td').find('span')
             if (spans.length > 0) {
-              spans.each(function(i) {
+              spans.each(function (i) {
                 row[keys[i]] = _(this).text().trim()
               })
               rows.push(row)
@@ -521,12 +521,12 @@ class SpiderService extends Service {
 
         // 总平时成绩
         $('p table table tr')
-          .each(function(i, el) {
+          .each(function (i, el) {
             const row = {}
             const _ = cheerio.load(el)
             const spans = _('td').find('span')
             if (spans.length > 0) {
-              spans.each(function(i) {
+              spans.each(function (i) {
                 row[keys[i]] = _(this).text().trim()
               })
               total = row.score
